@@ -2,8 +2,21 @@ import sys
 
 input = sys.stdin.readline
 
-
 method, k = map(int, input().split())
+
+
+def update_heap(arr, idx, num):
+    left = 2 * idx
+    right = 1 + 2 * idx
+    small_idx = idx
+    if left <= num and arr[small_idx] > arr[left]:
+        small_idx = left
+    if right <= num and arr[small_idx] > arr[right]:
+        small_idx = right
+    if small_idx != idx:
+        arr[idx], arr[small_idx] = arr[small_idx], arr[idx]
+        return update_heap(arr, small_idx, num)
+
 
 if method == 1:  # 삽입 정렬
     n = int(input())
@@ -60,9 +73,26 @@ elif method == 2:  # 선택 정렬
 elif method == 3:  # 힙 정렬
     n = int(input())
     arr = []
+    sorted_arr = []
     cnt = 0
     for _ in range(n):
         arr.append(int(input()))
+    length = len(arr)
+    arr = [0] + arr
+    for i in range(length, 0, -1):
+        update_heap(arr, i, length)
+
+    for i in range(length, 0, -1):
+        cnt += 1
+        sorted_arr.append(arr[1])
+        arr[i], arr[1] = arr[1], arr[i]
+        update_heap(arr, 1, i - 1)
+        if cnt == k:
+            break
+
+    arr = arr[1:][:-k]
+    for i in arr:
+        print(i)
 
 else:  # 퀵 정렬
     n = int(input())
@@ -70,4 +100,3 @@ else:  # 퀵 정렬
     cnt = 0
     for _ in range(n):
         arr.append(int(input()))
-
