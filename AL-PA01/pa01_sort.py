@@ -1,21 +1,56 @@
 import sys
-
 input = sys.stdin.readline
 
 method, k = map(int, input().split())
 
+pivot_cnt = 0
 
-def update_heap(arr, idx, num):
+
+def update_heap(array, idx, num):
     left = 2 * idx
     right = 1 + 2 * idx
     small_idx = idx
-    if left <= num and arr[small_idx] > arr[left]:
+    if left <= num and array[small_idx] >= array[left]:
         small_idx = left
-    if right <= num and arr[small_idx] > arr[right]:
+    if right <= num and array[small_idx] >= array[right]:
         small_idx = right
     if small_idx != idx:
-        arr[idx], arr[small_idx] = arr[small_idx], arr[idx]
-        return update_heap(arr, small_idx, num)
+        array[idx], array[small_idx] = array[small_idx], array[idx]
+        update_heap(array, small_idx, num)
+
+
+def is_sorted(array):
+    if array == sorted(array):
+        return True
+    else:
+        return False
+
+
+def quick_sort(array, start, end):
+    global pivot_cnt
+    if start >= end:
+        return
+    pivot = start
+    if pivot_cnt > k:
+        return
+    left = start + 1
+    right = end
+
+    while left <= right:
+        while left <= end and array[left] <= array[pivot]:
+            left += 1
+        while right > start and array[right] > array[pivot]:
+            right -= 1
+        if left > right:
+            array[right], array[pivot] = array[pivot], array[right]
+            pivot_cnt += 1
+            if pivot_cnt == k or is_sorted(array):
+                for a in array:
+                    print(a)
+        else:
+            array[left], array[right] = array[right], array[left]
+    quick_sort(array, start, right - 1)
+    quick_sort(array, right + 1, end)
 
 
 if method == 1:  # 삽입 정렬
@@ -23,34 +58,15 @@ if method == 1:  # 삽입 정렬
     arr = []
     for _ in range(n):
         arr.append(int(input()))
-    target = arr[k]
-    sorted_arr = arr[:1]
-    ready = arr[1:]
-    ans = 0
-    check = False
     cnt = 0
-    while len(ready) > 0:
-        if not check:
-            # print(sorted_arr)
-            # print(ready)
-            # print("현재 비교 횟수:" + str(cnt))
-            cur = ready.pop(0)
-            for i in range(len(sorted_arr)):
-                cnt += 1
-                if cur <= sorted_arr[i]:
-                    sorted_arr.insert(i, cur)
-                    if cur == target:
-                        check = True
-                        print(cnt)
-                    break
+    for i in range(1, k + 1):
+        for j in range(i, 0, -1):
+            cnt += 1
+            if arr[j] < arr[j - 1]:
+                arr[j], arr[j - 1] = arr[j - 1], arr[j]
             else:
-                cnt += 1
-                sorted_arr.append(cur)
-                if cur == target:
-                    check = True
-                    print(cnt)
-        else:
-            break
+                break
+    print(cnt)
 
 elif method == 2:  # 선택 정렬
     n = int(input())
@@ -72,31 +88,29 @@ elif method == 2:  # 선택 정렬
 
 elif method == 3:  # 힙 정렬
     n = int(input())
-    arr = []
+    arr, tmp = [], []
     sorted_arr = []
-    cnt = 0
     for _ in range(n):
         arr.append(int(input()))
     length = len(arr)
     arr = [0] + arr
     for i in range(length, 0, -1):
         update_heap(arr, i, length)
-
     for i in range(length, 0, -1):
-        cnt += 1
         sorted_arr.append(arr[1])
         arr[i], arr[1] = arr[1], arr[i]
+        arr.pop()
+        tmp = arr
         update_heap(arr, 1, i - 1)
-        if cnt == k:
+        if len(sorted_arr) == k:
             break
-
-    arr = arr[1:][:-k]
-    for i in arr:
+    tmp = tmp[1:]
+    for i in tmp:
         print(i)
 
-else:  # 퀵 정렬
+elif method == 4:  # 퀵 정렬
     n = int(input())
     arr = []
-    cnt = 0
     for _ in range(n):
         arr.append(int(input()))
+    quick_sort(arr, 0, len(arr) - 1)
