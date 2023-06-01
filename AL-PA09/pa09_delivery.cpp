@@ -1,120 +1,111 @@
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#define INT_MAX 2147483647;
+#include <cmath>
+#include <climits>
 
 using namespace std;
 
-vector<int> selectedIngredients;
-vector<int> bestIngredients;
-vector<vector<int>> ingredients;
-vector<int> minRequirements;
-int minCost = INT_MAX;
-int maxNutrientSum = 0;
+struct Point {
+    int x;
+    int y;
+};
 
+int n;
+vector<int> deliveryOrder;
+vector<int> carried;
+vector<Point> restaurants;
+vector<Point> homes;
+vector<bool> visited;
+int minDistance = INT_MAX;
+vector<int> currOrder;
+int currDistance = 0;
 
-bool isValidSolution() {
-    vector<int> sum(4, 0);
-    for (int i = 0; i < selectedIngredients.size(); i++) {
-        for (int j = 0; j < 4; j++) {
-            sum[j] += ingredients[selectedIngredients[i]][j];
-        }
-    }
-    for (int i = 0; i < 4; i++) {
-        if (sum[i] < minRequirements[i]) {
-            return false;
-        }
-    }
-    return true;
+int calculateDistance(const Point& p1, const Point& p2) {
+    return abs(p1.x - p2.x) + abs(p1.y - p2.y);
 }
 
-bool canMeetRequirements(int index) {
-    vector<int> remainingSum(4, 0);
-	vector<int> selectedSum(4, 0);
-    for (int i = index; i < ingredients.size(); i++) {
-        for (int j = 0; j < 4; j++) {
-            remainingSum[j] += ingredients[i][j];
-        }
-    }
-	for (int i = 0; i < selectedIngredients.size(); i++) {
-		for (int j = 0; j < 4; j++) {
-			selectedSum[j] += ingredients[selectedIngredients[i]][j];
-		}
-	}
+vector<int> getLexicographicallySmaller(const vector<int>& vec1, const vector<int>& vec2) {
+    size_t minLength = min(vec1.size(), vec2.size());
 
-    for (int i = 0; i < 4; i++) {
-        if (selectedSum[i] < minRequirements[i] && remainingSum[i] + selectedSum[i] < minRequirements[i]) {
-            return false;
+    for (size_t i = 0; i < minLength; ++i) {
+        if (vec1[i] < vec2[i]) {
+            return vec1;
+        } else if (vec1[i] > vec2[i]) {
+            return vec2;
         }
     }
-    return true;
+    return vec1.size() < vec2.size() ? vec1 : vec2;
 }
 
-void backtrack(int index, int totalCost) {
-    if (index == ingredients.size()) {
-        if (isValidSolution() && totalCost < minCost) {
-            minCost = totalCost;
-            bestIngredients = selectedIngredients;
-            int nutrientSum = 0;
-            for (int i = 0; i < selectedIngredients.size(); i++) {
-                for (int j = 0; j < 4; j++) {
-                    nutrientSum += ingredients[selectedIngredients[i]][j];
-                }
-            }
-            maxNutrientSum = nutrientSum;
-        } else if (isValidSolution() && totalCost == minCost) {
-            int nutrientSum = 0;
-            for (int i = 0; i < selectedIngredients.size(); i++) {
-                for (int j = 0; j < 4; j++) {
-                    nutrientSum += ingredients[selectedIngredients[i]][j];
-                }
-            }
-            if (nutrientSum > maxNutrientSum) {
-                bestIngredients = selectedIngredients;
-                maxNutrientSum = nutrientSum;
-            }
+void backtrack(int count, vector<int>& currOrder, int currDistance, int curX, int curY) {
+    if (count == n) {
+        if (currDistance < minDistance) {
+            deliveryOrder = currOrder;
+            minDistance = currDistance;
+        }
+		else if (currDistance == minDistance) {
+			if (getLexicographicallySmaller(deliveryOrder, currOrder) == currOrder) {
+				deliveryOrder = currOrder;
+			}
         }
         return;
-	}
+    }
 
-    if (index < ingredients.size()) {
-		if (!canMeetRequirements(index)) return;
-	}
+    if (carried.size() < 2) {
+        for (int i = 0; i < n; i++) {
+            if (!visited[i]) {
+                visited[i] = true;
 
-    selectedIngredients.push_back(index);
-    backtrack(index + 1, totalCost + ingredients[index][4]);
-    selectedIngredients.pop_back();
-    backtrack(index + 1, totalCost);
+                int distanceToRestaurant = calculateDistance({curX, curY}, restaurants[i]);
+
+                currDistance += distanceToRestaurant;
+                currOrder.push_back(i + 1);
+                carried.push_back(i + 1);
+
+                backtrack(count, currOrder, currDistance, restaurants[i].x, restaurants[i].y);
+
+                currDistance -= distanceToRestaurant;
+                currOrder.pop_back();
+                carried.pop_back();
+                visited[i] = false;
+            }
+        }
+    }
+
+	for (int i = 0; i < carried.size(); i++) {
+		int tmp = carried[i];
+		int distanceToHome = calculateDistance({curX, curY}, homes[tmp - 1]);
+		currDistance += distanceToHome;
+		currOrder.push_back(-tmp);
+		carried.erase(carried.begin() + i);
+		backtrack(count + 1, currOrder, currDistance, homes[tmp - 1].x, homes[tmp - 1].y);
+		currDistance -= distanceToHome;
+		currOrder.pop_back();
+		carried.insert(carried.begin() + i, tmp);
+	}
 }
 
 int main() {
-    int numIngredients;
-    cin >> numIngredients;
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
 
-    minRequirements.resize(4);
-    for (int i = 0; i < 4; i++) {
-        cin >> minRequirements[i];
+    cin >> n;
+    restaurants.resize(n);
+    homes.resize(n);
+    visited.resize(n, false);
+
+    for (int i = 0; i < n; i++) {
+        cin >> restaurants[i].x >> restaurants[i].y >> homes[i].x >> homes[i].y;
     }
 
-    ingredients.resize(numIngredients);
-    for (int i = 0; i < numIngredients; i++) {
-        ingredients[i].resize(5);
-        for (int j = 0; j < 5; j++) {
-            cin >> ingredients[i][j];
-        }
+    backtrack(0, currOrder, currDistance, 500, 500);
+
+    for (int i = 0; i < deliveryOrder.size(); i++) {
+        cout << deliveryOrder[i] << " ";
     }
 
-    backtrack(0, 0);
-
-    if (bestIngredients.empty()) {
-        cout << "0" << endl;
-    } else {
-        sort(bestIngredients.begin(), bestIngredients.end());
-        for (int i = 0; i < bestIngredients.size(); i++) {
-            cout << bestIngredients[i] + 1 << " ";
-        }
-        cout << endl;
-    }
+    cout << endl << minDistance << endl;
 
     return 0;
 }
